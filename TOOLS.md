@@ -87,8 +87,9 @@ code_diff(file1: string, file2: string) - 代码对比
 
 | 用户关键词 | 推荐工具 | 示例 |
 |-----------|---------|------|
-| "搜索"、"baidu"、"google" | `web_search` | "baidu一下福州天气" |
-| "天气"、"新闻"、"实时信息" | `web_search` | "今天福州天气" |
+| "天气"、"气温"、"温度" | `web_search`（wttr.in国内可用） | "今天福州天气" |
+| "访问网页"、"打开网页"、"获取网页" | `web_fetch`（国内可用） | "访问https://weather.com" |
+| "搜索"、"baidu"、"google" | `web_fetch` + 搜索URL | "搜索福州天气（需构造搜索URL）" |
 | "读取文件"、"查看文件" | `read_file` | "读取E:/test.py文件" |
 | "列出文件"、"查看目录" | `list_files` | "列出E:/llm-tools目录" |
 | "执行命令"、"运行" | `run_command` | "执行dir命令" |
