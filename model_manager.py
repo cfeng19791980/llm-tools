@@ -686,10 +686,11 @@ def api_tool_chat_stream():
         if user_input:
             messages = [{'role': 'user', 'content': user_input}]
     
-    def generate():
-        """生成器函数（流式输出）"""
-        nonlocal messages  # Python闭包：声明使用外部变量
+    def generate(messages):
+        """生成器函数（流式输出）- 参数传递版本"""
+        # 不使用nonlocal，直接使用参数messages
         
+        # Step 1: 读取System Prompt
         # Step 1: 读取System Prompt
         # Step 1: 读取System Prompt
         try:
@@ -763,11 +764,12 @@ def api_tool_chat_stream():
             pass
         
         # Step 5: 不需要工具，流式输出LLM回复
+        # Step 5: 不需要工具，流式输出LLM回复
         response_stream = requests.post(
             f'http://127.0.0.1:{port}/v1/chat/completions',
             json={
                 'model': 'Qwen3.5-9B-Q4_K_M.gguf',
-                'messages': [{'role': 'user', 'content': messages[-1]['content']}],  # 只发送最后一条
+                'messages': full_messages,  # 携带完整历史（修复对话历史问题）
                 'max_tokens': 1000,
                 'temperature': 0.7,
                 'stream': True
@@ -802,7 +804,7 @@ def api_tool_chat_stream():
                         pass
     
     return Response(
-        stream_with_context(generate()),
+        stream_with_context(generate(messages)),
         mimetype='text/event-stream'
     )
 
