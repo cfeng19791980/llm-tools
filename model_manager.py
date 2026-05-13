@@ -758,7 +758,54 @@ def api_tool_chat_stream():
                 tool_result = tool_registry.execute_tool(tool_name, arguments)
                 
                 # 流式输出工具结果
-                yield f'data: {json.dumps({"tool_result": tool_result, "done": True})}\n\n'
+                yield f'data: {json.dumps({"tool_result": tool_result})}\n\n'
+                
+                # 关键修复：将工具结果返回给LLM，让LLM基于结果继续对话
+                # 构建新的messages：添加工具结果
+                tool_result_messages = full_messages + [
+                    {'role': 'assistant', 'content': llm_output},
+                    {'role': 'user', 'content': f'工具执行结果：\n{tool_result}\n\n请基于这个结果回答用户问题。'}
+                ]
+                
+                # 再次调用LLM（流式），让LLM基于工具结果输出最终回复
+                response_stream = requests.post(
+                    f'http://127.0.0.1:{port}/v1/chat/completions',
+                    json={
+                        'model': 'Qwen3.5-9B-Q4_K_M.gguf',
+                        'messages': tool_result_messages,
+                        'max_tokens': 1000,
+                        'temperature': 0.7,
+                        'stream': True
+                    },
+                    stream=True,
+                    timeout=60
+                )
+                
+                if response_stream.status_code != 200:
+                    yield f'data: {json.dumps({"error": "LLM流式请求失败"})}\n\n'
+                    return
+                
+                # 流式输出LLM的最终回复
+                for line in response_stream.iter_lines():
+                    if line:
+                        line_text = line.decode('utf-8')
+                        
+                        if line_text.startswith('data: '):
+                            data_str = line_text[6:]
+                            
+                            if data_str.strip() == '[DONE]':
+                                yield f'data: {json.dumps({"done": True})}\n\n'
+                                break
+                            
+                            try:
+                                chunk_data = json.loads(data_str)
+                                content_chunk = chunk_data['choices'][0]['delta'].get('content', '')
+                                
+                                if content_chunk:
+                                    yield f'data: {json.dumps({"content": content_chunk})}\n\n'
+                            except json.JSONDecodeError:
+                                pass
+                
                 return
         except json.JSONDecodeError:
             pass

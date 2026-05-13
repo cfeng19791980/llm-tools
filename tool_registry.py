@@ -567,7 +567,20 @@ class ToolRegistry:
                     
                     result = f"✅ {city}天气查询成功\n"
                     result += f"温度: {current['temp_C']}°C\n"
-                    result += f"天气: {current['lang_zh'][0]['value']}\n"
+                    
+                    # 修复lang_zh参数问题：使用更通用的方式获取天气描述
+                    try:
+                        # 尝试获取中文描述
+                        if 'lang_zh' in current and current['lang_zh']:
+                            weather_desc = current['lang_zh'][0]['value']
+                        else:
+                            # 使用英文描述
+                            weather_desc = current['weatherDesc'][0]['value']
+                        
+                        result += f"天气: {weather_desc}\n"
+                    except:
+                        result += f"天气: {current.get('weatherDesc', [{}])[0].get('value', '未知')}\n"
+                    
                     result += f"风速: {current['windspeedKmph']} km/h\n"
                     result += f"湿度: {current['humidity']}%\n"
                     return result
