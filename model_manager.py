@@ -673,12 +673,18 @@ def api_stream_chat():
 
 @app.route('/api/tool_chat_stream', methods=['POST'])
 def api_tool_chat_stream():
-    """智能流式聊天：工具调用 + 流式输出"""
+    """智能流式聊天：工具调用 + 流式输出 + 对话历史"""
     from flask import Response, stream_with_context
     
     data = request.json
-    user_input = data.get('input', '')
+    messages = data.get('messages', [])  # 接收对话历史
     port = data.get('port', 1235)
+    
+    # 如果messages为空，使用旧方式（兼容）
+    if not messages:
+        user_input = data.get('input', '')
+        if user_input:
+            messages = [{'role': 'user', 'content': user_input}]
     
     def generate():
         """生成器函数（流式输出）"""
@@ -708,15 +714,22 @@ def api_tool_chat_stream():
         except Exception as e:
             system_prompt = 'You are a tool-using assistant. Output JSON for tool calls: {"tool": "tool_name", "args": {...}}'
         
-        # Step 2: 调用LLM判断是否需要工具（非流式）
+        # Step 2: 构建完整messages（包含历史）
+        # 限制历史长度（避免token过多）
+        max_history = 10
+        if len(messages) > max_history:
+            # 只保留最近的max_history条消息
+            messages = messages[-max_history:]
+        
+        # 添加system prompt
+        full_messages = [{'role': 'system', 'content': system_prompt}] + messages
+        
+        # Step 3: 调用LLM判断是否需要工具（非流式）
         response = requests.post(
             f'http://127.0.0.1:{port}/v1/chat/completions',
             json={
                 'model': 'assistant',
-                'messages': [
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': user_input}
-                ],
+                'messages': full_messages,  # 携带历史
                 'max_tokens': 100,
                 'temperature': 0.05
             },
@@ -729,7 +742,7 @@ def api_tool_chat_stream():
         
         llm_output = response.json()['choices'][0]['message']['content']
         
-        # Step 3: 判断是否工具调用
+        # Step 4: 判断是否工具调用
         try:
             tool_call = json.loads(llm_output.strip())
             tool_name = tool_call.get('tool')
@@ -747,14 +760,12 @@ def api_tool_chat_stream():
         except json.JSONDecodeError:
             pass
         
-        # Step 4: 不需要工具，流式输出LLM回复
+        # Step 5: 不需要工具，流式输出LLM回复
         response_stream = requests.post(
             f'http://127.0.0.1:{port}/v1/chat/completions',
             json={
                 'model': 'Qwen3.5-9B-Q4_K_M.gguf',
-                'messages': [
-                    {'role': 'user', 'content': user_input}
-                ],
+                'messages': [{'role': 'user', 'content': messages[-1]['content']}],  # 只发送最后一条
                 'max_tokens': 1000,
                 'temperature': 0.7,
                 'stream': True
