@@ -688,7 +688,9 @@ def api_tool_chat_stream():
     
     def generate():
         """生成器函数（流式输出）"""
+        nonlocal messages  # Python闭包：声明使用外部变量
         
+        # Step 1: 读取System Prompt
         # Step 1: 读取System Prompt
         try:
             identity_file = 'E:/llm-tools/IDENTITY.md'

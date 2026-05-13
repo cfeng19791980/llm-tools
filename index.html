@@ -174,7 +174,7 @@
         </div>
         <div class="input-area">
             <div class="input-wrapper">
-                <div class="input-box"><textarea id="inputBox" class="input-textarea" placeholder="Type message... (Enter to send)"></textarea></div>
+                <div class="input-box"><textarea id="inputBox" class="input-textarea" placeholder="Type message... (Enter to send)" onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea></div>
                 <div class="input-actions"><button class="btn btn-primary btn-send" onclick="sendMessage()">Send</button><button class="btn btn-danger btn-stop" onclick="stopInference()">Stop</button></div>
             </div>
         </div>
