@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM-Tools - Modern Interface</title>
+    <style>
+        /* ── Modern UI Design ── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #eee;
+            height: 100vh;
+            display: flex;
+        }
+        
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* ── Card Style ── */
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title::before {
+            content: '⚙️';
+            margin-right: 10px;
+        }
+        
+        .config-item {
+            margin: 12px 0;
+        }
+        
+        .config-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        
+        select:focus, input:focus {
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* ── Switch ── */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+        
+        .switch-label {
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: 0.3s;
+        }
+        
+        .switch-knob {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 50%;
+            top: 3px;
+            left: 4px;
+            transition: 0.3s;
+        }
+        
+        .switch.active {
+            background: #4CAF50;
+        }
+        
+        .switch.active .switch-knob {
+            left: 34px;
+        }
+        
+        /* ── Buttons ── */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: #fff;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #e53935 100%);
+            color: #fff;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        /* ── Main Area ── */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* ── Header ── */
+        .header {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+        }
+        
+        /* ── Model Management Bar ── */
+        .model-bar {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .model-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.running {
+            background: #4CAF50;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .model-info {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+        
+        /* ── Chat Container ── */
+        .chat-container {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .message {
+            margin: 15px 0;
+            padding: 15px 20px;
+            border-radius: 12px;
+            max-width: 85%;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: rgba(764ba2, 0.4);
+            border-left: 4px solid #764ba2;
+            margin-left: auto;
+        }
+        
+        .assistant-message {
+            background: rgba(102, 126, 234, 0.4);
+            border-left: 4px solid #667eea;
+        }
+        
+        .message-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+        
+        .message-content {
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* ── Input Area ── */
+        .input-area {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+        
+        textarea {
+            flex: 1;
+            min-height: 80px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            border-radius: 12px;
+            resize: none;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        
+        textarea:focus {
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+        
+        /* ── Config Input Small ── */
+        .config-input-small {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .config-input-small input {
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ── Sidebar ── -->
+    <div class="sidebar">
+        <div class="sidebar-title">🤖 LLM-Tools</div>
+        
+        <!-- Model Management Card -->
+        <div class="card">
+            <div class="card-title">Model Management</div>
+            
+            <!-- Model Status -->
+            <div class="model-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span class="model-info" id="modelInfoText">No model running</span>
+            </div>
+            
+            <!-- Model Selection -->
+            <div class="config-item">
+                <label class="config-label">Model</label>
+                <select id="modelSelect" onchange="refreshModels()">
+                    <option value="">-- Select Model --</option>
+                </select>
+            </div>
+            
+            <!-- Port -->
+            <div class="config-item">
+                <label class="config-label">Port</label>
+                <input type="number" id="portInput" value="1235">
+            </div>
+            
+            <!-- Start/Stop Buttons -->
+            <div class="btn-group">
+            <button class="btn btn-primary" id="startBtn" onclick="startModel()">▶ Start</button>
+            <button class="btn btn-danger" id="stopBtn" onclick="stopModel()">⬛ Stop</button>
+            </div>
+        </div>
+        
+        <!-- Model Parameters Card -->
+        <div class="card">
+            <div class="card-title">Parameters</div>
+            
+            <!-- GPU Layers -->
+            <div class="config-item">
+                <label class="config-label">GPU Layers (ngl)</label>
+                <input type="number" id="nglInput" value="99" min="1" max="99">
+            </div>
+            
+            <!-- Context Length -->
+            <div class="config-item">
+                <label class="config-label">Context Length</label>
+                <input type="number" id="ctxInput" value="32000">
+            </div>
+            
+            <!-- Threads -->
+            <div class="config-item">
+                <label class="config-label">Threads</label>
+                <input type="number" id="threadsInput" value="8">
+            </div>
+            
+            <!-- Temperature -->
+            <div class="config-item">
+                <label class="config-label">Temperature</label>
+                <input type="number" id="tempInput" value="0.05" step="0.01">
+            </div>
+            
+            <!-- Seed -->
+            <div class="config-item">
+                <label class="config-label">Seed</label>
+                <input type="number" id="seedInput" value="42">
+            </div>
+            
+            <!-- Flash Attention -->
+            <div class="switch-container">
+                <span class="switch-label">Flash Attention</span>
+                <div class="switch active" id="flashAttnSwitch" onclick="toggleSwitch(this)">
+                    <div class="switch-knob"></div>
+                </div>
+            </div>
+            
+            <!-- Thinking -->
+            <div class="switch-container">
+                <span class="switch-label">Thinking Chain</span>
+                <div class="switch" id="thinkingSwitch" onclick="toggleSwitch(this)">
+                    <div class="switch-knob"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Config Management Card -->
+        <div class="card">
+            <div class="card-title">Config Files</div>
+            
+            <!-- Config Name -->
+            <div class="config-item">
+                <label class="config-label">Config Name</label>
+                <input type="text" id="configNameInput" value="default">
+            </div>
+            
+            <!-- Save/Load Buttons -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="saveBtn" onclick="saveConfig()">💾 Save</button>
+                <button class="btn btn-secondary" id="loadBtn" onclick="loadConfig()">📂 Load</button>
+            </div>
+            
+            <!-- Config List -->
+            <div class="config-item">
+                <label class="config-label">Saved Configs</label>
+                <select id="configListSelect" onchange="selectConfig()">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Clear Chat -->
+            <button class="btn btn-secondary" id="clearBtn" onclick="clearChat()" style="width: 100%; margin-top: 15px;">
+            🗑️ Clear Chat
+        </button>
+    </div>
+    
+    <!-- ── Main Area ── -->
+    <div class="main-area">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">LLM-Tools - Modern Interface</div>
+        </div>
+        
+        <!-- Model Status Bar -->
+        <div class="model-bar">
+            <div class="model-status">
+                <span class="model-info">Backend: <a href="http://127.0.0.1:5003" target="_blank" style="color: #fff;">http://127.0.0.1:5003</a></span>
+            </div>
+            <div class="model-status">
+                <span class="model-info">Server: <span id="serverPortText">port 1235</span></span>
+            </div>
+            <div class="model-status">
+                <span class="model-info" id="speedText">Speed: --</span>
+            </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <!-- Messages will be added dynamically -->
+        </div>
+        
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-row">
+                <textarea id="inputBox" placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"></textarea>
+            <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">Send</button>
+            <button class="btn btn-danger" id="stopInferenceBtn" onclick="stopInference()">Stop</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ── JavaScript ── -->
+    <script>
+        // ── Configuration ──
+        const BACKEND_API = 'http://127.0.0.1:5003';
+        const LLAMA_SERVER = 'http://127.0.0.1:1235';
+        let isStreaming = false;
+        let currentController = null;
+        
+        // ── Toggle Switch ──
+        function toggleSwitch(switchElement) {
+            switchElement.classList.toggle('active');
+        }
+        
+        // ── Refresh Models List ──
+        async function refreshModels() {
+            try {
+                // 【简化方案】直接从models_list.json读取（异步，不阻塞）
+                const response = await fetch('/models_list.json');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('modelSelect');
+                    select.innerHTML = '<option value="">-- Select Model --</option>';
+                    
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = `${model.name} (${model.size})`;
+                        select.appendChild(option);
+                    });
+                    
+                    console.log(`✅ 模型列表加载成功：${data.models.length}个模型`);
+                } else {
+                    console.log('⚠️ models_list.json返回失败');
+                }
+            } catch (error) {
+                console.log('models_list.json加载失败:', error);
+            }
+        }
+        
+        // ── Check Model Status ──
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${BACKEND_API}/api/status`);
+                const data = await response.json();
+                
+                const indicator = document.getElementById('statusIndicator');
+                const infoText = document.getElementById('modelInfoText');
+                
+                if (data.running) {
+                    indicator.classList.add('running');
+                    infoText.textContent = `${data.model} (PID: ${data.pid}, Port: ${data.port})`;
+                    document.getElementById('serverPortText').textContent = `port ${data.port}`;
+                } else {
+                    indicator.classList.remove('running');
+                    infoText.textContent = 'No model running';
+                }
+            } catch (error) {
+                console.log('Backend not reachable');
+            }
+        }
+        
+        // ── Start Model ──
+        async function startModel() {
+            const model = document.getElementById('modelSelect').value;
+            if (!model) {
+                alert('Please select a model first');
+                return;
+            }
+            
+            const params = {
+                model: model,
+                port: parseInt(document.getElementById('portInput').value),
+                ngl: parseInt(document.getElementById('nglInput').value),
+                ctx: parseInt(document.getElementById('ctxInput').value),
+                threads: parseInt(document.getElementById('threadsInput').value),
+                temp: parseFloat(document.getElementById('tempInput').value),
+                seed: parseInt(document.getElementById('seedInput').value),
+                flash_attn: document.getElementById('flashAttnSwitch').classList.contains('active')
+            };
+            
+            try {
+                const response = await fetch(`${BACKEND_API}/api/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Model started: ${model}\nPID: ${data.pid}\nPort: ${data.port}`);
+                    checkStatus();
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Backend not running. Please start model_manager.py first.\nRun: 启动_ModelManager.bat`);
+            }
+        }
+        
+        // ── Stop Model ──
+        async function stopModel() {
+            try {
+                const response = await fetch(`${BACKEND_API}/api/stop`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    checkStatus();
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert('Backend not running');
+            }
+        }
+        
+        // ── Save Config ──
+        async function saveConfig() {
+            const configName = document.getElementById('configNameInput').value;
+            if (!configName) {
+                alert('Please enter config name');
+                return;
+            }
+            
+            const params = {
+                name: configName,
+                model: document.getElementById('modelSelect').value,
+                port: parseInt(document.getElementById('portInput').value),
+                ngl: parseInt(document.getElementById('nglInput').value),
+                ctx: parseInt(document.getElementById('ctxInput').value),
+                threads: parseInt(document.getElementById('threadsInput').value),
+                temp: parseFloat(document.getElementById('tempInput').value),
+                seed: parseInt(document.getElementById('seedInput').value),
+                flash_attn: document.getElementById('flashAttnSwitch').classList.contains('active')
+            };
+            
+            try {
+                const response = await fetch(`${BACKEND_API}/api/save_config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Config saved: ${configName}.bat\nPath: ${data.path}`);
+                    refreshConfigs();
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert('Backend not running');
+            }
+        }
+        
+        // ── Load Config ──
+        async function loadConfig() {
+            const configName = document.getElementById('configListSelect').value;
+            if (!configName) {
+                alert('Please select a config');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BACKEND_API}/api/load_config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: configName })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Config loaded: ${configName}\nCheck parameters in sidebar`);
+                    // TODO: Parse config content and update UI
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert('Backend not running');
+            }
+        }
+        
+        // ── Refresh Configs List ──
+        async function refreshConfigs() {
+            try {
+                const response = await fetch(`${BACKEND_API}/api/list_configs`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('configListSelect');
+                    select.innerHTML = '<option value="">-- Select --</option>';
+                    
+                    data.configs.forEach(config => {
+                        const option = document.createElement('option');
+                        option.value = config.name;
+                        option.textContent = `${config.name} (${config.mtime})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.log('Backend not running');
+            }
+        }
+        
+        // ── Select Config ──
+        function selectConfig() {
+            const configName = document.getElementById('configListSelect').value;
+            document.getElementById('configNameInput').value = configName;
+        }
+        
+        // ── Send Message (Streaming) ──
+        async function sendMessage() {
+            const input = document.getElementById('inputBox').value;
+            if (!input.trim()) return;
+            
+            addMessage('user', input);
+            document.getElementById('inputBox').value = '';
+            
+            const aiMessageDiv = addMessage('assistant', '');
+            const contentDiv = aiMessageDiv.querySelector('.message-content');
+            
+            try {
+                // 【改进】使用流式API实时显示输出
+                const response = await fetch(`${BACKEND_API}/api/stream_chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input: input,
+                        port: 1235
+                    })
+                });
+                
+                // 使用ReadableStream处理流式响应
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                let fullContent = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    // 解码chunk
+                    const chunk = decoder.decode(value);
+                    
+                    // SSE格式：data: {...}
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.substring(6);
+                            
+                            try {
+                                const data = JSON.parse(dataStr);
+                                
+                                if (data.content) {
+                                    // 实时追加内容
+                                    fullContent += data.content;
+                                    contentDiv.textContent = fullContent;
+                                    
+                                    // 自动滚动到底部
+                                    document.getElementById('chatContainer').scrollTop = 
+                                        document.getElementById('chatContainer').scrollHeight;
+                                }
+                                
+                                if (data.done) {
+                                    // 流式结束
+                                    console.log('Stream completed:', data.full_content);
+                                }
+                                
+                                if (data.error) {
+                                    contentDiv.textContent = '❌ 错误: ' + data.error;
+                                }
+                            } catch (e) {
+                                // JSON解析失败（可能是部分chunk）
+                                console.log('Parse error:', e);
+                            }
+                        }
+                    }
+                }
+                
+                if (!fullContent) {
+                    contentDiv.textContent = '⚠️ 无响应内容';
+                }
+                
+            } catch (error) {
+                contentDiv.textContent = '❌ 网络错误: ' + error.message;
+            }
+        }
+        
+        // ── Send Message (Tool Chat - 非流式，用于工具调用) ──
+        async function sendMessageWithTool() {
+            const input = document.getElementById('inputBox').value;
+            if (!input.trim()) return;
+            
+            addMessage('user', input);
+            document.getElementById('inputBox').value = '';
+            
+            const aiMessageDiv = addMessage('assistant', '正在处理...');
+            
+            try {
+                // 【关键改进】调用后端工具调用API
+                const response = await fetch(`${BACKEND_API}/api/tool_chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input: input,
+                        port: 1235  // 推理服务端口
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 清空assistant消息
+                    aiMessageDiv.querySelector('.message-content').textContent = '';
+                    
+                    if (data.tool_used) {
+                        // 【工具调用模式】显示工具调用信息
+                        const toolInfo = document.createElement('div');
+                        toolInfo.className = 'tool-info';
+                        toolInfo.innerHTML = `
+                            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                <div style="color: #4CAF50; font-weight: bold;">🔧 工具调用</div>
+                                <div>工具: <span style="color: #2196F3;">${data.tool}</span></div>
+                                <div>参数: <span style="color: #FF9800;">${JSON.stringify(data.arguments)}</span></div>
+                            </div>
+                        `;
+                        aiMessageDiv.appendChild(toolInfo);
+                        
+                        // 显示工具执行结果
+                        const resultDiv = document.createElement('div');
+                        resultDiv.className = 'tool-result';
+                        resultDiv.style.color = '#fff';
+                        resultDiv.textContent = data.result || '执行成功';
+                        aiMessageDiv.appendChild(resultDiv);
+                    } else {
+                        // 【直接回复模式】显示LLM输出
+                        aiMessageDiv.querySelector('.message-content').textContent = data.llm_output || '无法理解';
+                    }
+                } else {
+                    aiMessageDiv.querySelector('.message-content').textContent = '❌ 错误: ' + (data.message || '请求失败');
+                }
+                
+            } catch (error) {
+                aiMessageDiv.querySelector('.message-content').textContent = '❌ 网络错误: ' + error.message;
+            }
+        }
+        
+        // ── Stop Inference ──
+        function stopInference() {
+            if (isStreaming && currentController) {
+                currentController.abort();
+                isStreaming = false;
+            }
+        }
+        
+        // ── Add Message ──
+        function addMessage(role, content) {
+            const div = document.createElement('div');
+            div.className = `message ${role}-message`;
+            
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = role === 'user' ? '👤 You' : '🤖 Assistant';
+            div.appendChild(label);
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            div.appendChild(contentDiv);
+            
+            document.getElementById('chatContainer').appendChild(div);
+            document.getElementById('chatContainer').scrollTop = 
+                document.getElementById('chatContainer').scrollHeight;
+            
+            return div;
+        }
+        
+        // ── Clear Chat ──
+        function clearChat() {
+            document.getElementById('chatContainer').innerHTML = '';
+        }
+        
+        // ── Enter to Send ──
+        document.getElementById('inputBox').onkeypress = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+        
+        // ── Backend Readiness Check ──
+        async function checkBackendReady() {
+            try {
+                const response = await fetch(`${BACKEND_API}/api/system_status`, {timeout: 5000});
+                if (response.status === 200) {
+                    const data = await response.json();
+                    console.log('Backend ready:', data.backend.timestamp);
+                    return true;
+                }
+            } catch (error) {
+                console.log('Backend not ready:', error);
+                return false;
+            }
+            return false;
+        }
+        
+        // ── Initialize Immediately (不阻塞) ──
+        console.log('✅ JavaScript已完全加载');
+        console.log('✅ sendMessage函数已定义');
+        
+        // 立即初始化UI（不等待Backend）
+        try {
+            checkStatus();
+            refreshModels();
+            refreshConfigs();
+        } catch (e) {
+            console.log('初始化UI时错误:', e);
+        }
+        
+        // 定时刷新
+        setInterval(checkStatus, 5000);
+        setInterval(refreshModels, 30000);
+        
+        // 后台检查Backend（不阻塞）
+        (async () => {
+            try {
+                const ready = await checkBackendReady();
+                if (!ready) {
+                    document.getElementById('modelInfoText').textContent = 'Backend连接失败';
+                    document.getElementById('statusIndicator').style.background = '#f44336';
+                }
+            } catch (e) {
+                console.log('Backend检查失败:', e);
+            }
+        })();
+    </script>
+</body>
+</html>

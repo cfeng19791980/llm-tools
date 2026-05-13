@@ -1,0 +1,70 @@
+# LLM-Tools - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 备份文件
+*.bak
+*_backup_*.html
+*_backup_*.py
+
+# 日志文件
+*.log
+logs/
+
+# 模型文件（太大）
+*.gguf
+models/
+
+# 配置文件（本地）
+models_list.json
+*.json
+
+# 临时文件
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 测试文件
+test_*.html
+test_*.py
+console_test.py
+manual_console_test.py
+network_monitor_test.py
+playwright_frontend_test.py
+final_complete_test.py
+
+# 启动脚本（可选）
+*.bat

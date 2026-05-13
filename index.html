@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM-Tools - Modern Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: rgba(26, 34, 52, 0.75);
+            --bg-card-hover: rgba(36, 48, 72, 0.85);
+            --gradient-primary: linear-gradient(135deg, #00d4ff 0%, #7c3aed 50%, #db2777 100%);
+            --gradient-accent: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+            --gradient-bg: linear-gradient(135deg, #0a0e17 0%, #1a1a2e 50%, #16213e 100%);
+            --neon-cyan: #00d4ff;
+            --neon-purple: #7c3aed;
+            --neon-pink: #db2777;
+            --neon-green: #00ff88;
+            --neon-gold: #fbbf24;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 212, 255, 0.15);
+            --border-glow: rgba(0, 212, 255, 0.3);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.2);
+            --bg-radial-1: rgba(0, 212, 255, 0.08);
+            --bg-radial-2: rgba(124, 58, 237, 0.08);
+            --bg-radial-3: rgba(219, 39, 119, 0.05);
+            --bg-grid: rgba(0, 212, 255, 0.03);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --sidebar-width: 300px;
+            --font-scale: 1;
+        }
+        [data-theme="eye-care"] {
+            --bg-primary: #1a2e1a; --bg-card: rgba(36, 51, 36, 0.8);
+            --gradient-primary: linear-gradient(135deg, #4a9f4a 0%, #2d6b2d 50%, #1f5c1f 100%);
+            --gradient-accent: linear-gradient(135deg, #6bbf6b 0%, #4a9f4a 100%);
+            --gradient-bg: linear-gradient(135deg, #1a2e1a 0%, #243324 50%, #1a2e1a 100%);
+            --neon-cyan: #5cb85c; --neon-purple: #4a9f4a; --neon-pink: #8bc34a; --neon-green: #8bc34a;
+            --text-primary: #e8f5e9; --text-secondary: #a5d6a7; --text-muted: #81c784;
+            --border-color: rgba(92, 184, 92, 0.2); --border-glow: rgba(92, 184, 92, 0.4);
+            --bg-radial-1: rgba(92, 184, 92, 0.08); --bg-grid: rgba(92, 184, 92, 0.03);
+        }
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5; --bg-card: rgba(255, 255, 255, 0.85);
+            --gradient-primary: linear-gradient(135deg, #2196f3 0%, #1976d2 50%, #1565c0 100%);
+            --gradient-accent: linear-gradient(135deg, #42a5f5 0%, #2196f3 100%);
+            --gradient-bg: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 50%, #e0e0e0 100%);
+            --neon-cyan: #2196f3; --neon-purple: #673ab7; --neon-pink: #e91e63; --neon-green: #4caf50;
+            --text-primary: #212121; --text-secondary: #424242; --text-muted: #757575;
+            --border-color: rgba(33, 150, 243, 0.2); --border-glow: rgba(33, 150, 243, 0.4);
+            --bg-radial-1: rgba(33, 150, 243, 0.08); --bg-grid: rgba(33, 150, 243, 0.03);
+            --input-bg: rgba(0, 0, 0, 0.05);
+        }
+        [data-font="s"] { --font-scale: 0.85; }
+        [data-font="l"] { --font-scale: 1.15; }
+        [data-font="xl"] { --font-scale: 1.3; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans SC', 'Segoe UI', sans-serif; background: var(--gradient-bg); color: var(--text-primary); height: 100vh; display: flex; position: relative; overflow: hidden; font-size: calc(13px * var(--font-scale)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at 20% 20%, var(--bg-radial-1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, var(--bg-radial-2) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, var(--bg-radial-3) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+        body::after { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px), linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; z-index: 0; }
+        .theme-switcher { position: fixed; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 1000; }
+        .theme-btn, .font-btn { padding: 5px 10px; border: 1px solid var(--border-color); border-radius: 5px; background: var(--bg-card); color: var(--text-secondary); font-size: 11px; cursor: pointer; transition: all 0.3s; }
+        .theme-btn:hover, .font-btn:hover, .theme-btn.active { background: var(--gradient-primary); color: #fff; border-color: var(--neon-cyan); }
+        .sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--bg-card); backdrop-filter: blur(20px); padding: 15px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; z-index: 1; flex-shrink: 0; }
+        .sidebar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient-primary); }
+        .sidebar-title { color: var(--text-primary); font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+        .card { background: var(--bg-card); border-radius: 12px; padding: 12px; margin: 8px 0; border: 1px solid var(--border-color); transition: all 0.3s; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent); opacity: 0.5; }
+        .card:hover { background: var(--bg-card-hover); border-color: var(--border-glow); transform: translateY(-1px); box-shadow: var(--shadow-card); }
+        .card-title { color: var(--text-primary); font-size: 13px; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+        .card-icon { width: 24px; height: 24px; background: var(--gradient-primary); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+        .form-group { margin-bottom: 8px; }
+        .form-label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
+        .form-input, .form-select { width: 100%; padding: 8px 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; outline: none; transition: all 0.3s; }
+        .form-input:focus, .form-select:focus { border-color: var(--neon-cyan); box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1), var(--shadow-glow); }
+        .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2300d4ff' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+        .switch-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+        .switch-label { font-size: 12px; color: var(--text-secondary); }
+        .switch { position: relative; width: 40px; height: 22px; background: rgba(0, 0, 0, 0.3); border-radius: 11px; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.3s; }
+        .switch-knob { position: absolute; width: 16px; height: 16px; background: var(--text-muted); border-radius: 50%; top: 2px; left: 2px; transition: all 0.3s; }
+        .switch.active { background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .switch.active .switch-knob { left: 20px; background: #fff; }
+        .btn { padding: 8px 12px; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: var(--gradient-primary); color: #fff; box-shadow: 0 2px 10px rgba(0, 212, 255, 0.2); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .btn-group { display: flex; gap: 6px; margin-top: 8px; }
+        .btn-group .btn { flex: 1; }
+        .btn-full { width: 100%; margin-top: 8px; }
+        .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 1; }
+        .header { background: var(--bg-card); backdrop-filter: blur(20px); padding: 12px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+        .header-title { font-size: 16px; font-weight: 600; }
+        .status-bar { display: flex; align-items: center; gap: 20px; }
+        .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); animation: pulse 2s infinite; }
+        .status-dot.active { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .chat-container { flex: 1; padding: 20px; overflow-y: auto; }
+        .message { margin-bottom: 16px; padding: 12px 16px; border-radius: 14px; max-width: 80%; animation: messageIn 0.3s ease; line-height: 1.6; }
+        @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .user-message { margin-left: auto; background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(219, 39, 119, 0.2)); border: 1px solid rgba(124, 58, 237, 0.3); border-bottom-right-radius: 4px; }
+        .user-message .message-header { color: var(--neon-pink); }
+        .assistant-message { margin-right: auto; background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(124, 58, 237, 0.1)); border: 1px solid rgba(0, 212, 255, 0.2); border-bottom-left-radius: 4px; }
+        .assistant-message .message-header { color: var(--neon-cyan); }
+        .input-area { background: var(--bg-card); backdrop-filter: blur(20px); padding: 16px 24px; border-top: 1px solid var(--border-color); }
+        .input-wrapper { display: flex; gap: 12px; align-items: flex-end; }
+        .input-box { flex: 1; }
+        .input-textarea { width: 100%; min-height: 50px; max-height: 120px; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-primary); font-size: 13px; resize: none; outline: none; transition: all 0.3s; line-height: 1.5; }
+        .input-textarea:focus { border-color: var(--neon-cyan); box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1), var(--shadow-glow); }
+        .input-actions { display: flex; gap: 6px; }
+        .btn-send, .btn-stop { min-width: 60px; height: 42px; border-radius: 12px; padding: 0 14px; font-size: 11px; }
+        .model-status-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; margin-bottom: 10px; }
+        .model-status-indicator { width: 12px; height: 12px; border-radius: 50%; background: var(--text-muted); }
+        .model-status-indicator.running { background: var(--neon-green); box-shadow: 0 0 12px var(--neon-green); animation: pulse 1.5s infinite; }
+        .model-status-text { font-size: 12px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="theme-switcher">
+        <button class="theme-btn active" onclick="setTheme('neon')">霓虹</button>
+        <button class="theme-btn" onclick="setTheme('eye-care')">护眼</button>
+        <button class="theme-btn" onclick="setTheme('light')">浅色</button>
+        <button class="font-btn" onclick="setFont()">字体</button>
+    </div>
+    <div class="sidebar">
+
+
+<div class="status-bar"><div class="status-item"><div class="status-dot" id="backendStatus"></div><span>运行状态</span></div><div class="status-item"><span>Server:</span><span id="serverPortText" style="color:var(--neon-cyan)">运行端口：1235</span></div></div>
+
+        <div class="card">
+           
+            <div class="model-status-card"><div class="model-status-indicator" id="statusIndicator"></div><div class="model-status-text" id="modelInfoText">No model running</div></div>
+            <div class="form-group"><label class="form-label">Model</label><select id="modelSelect" class="form-select"><option value="">-- Select --</option></select></div>
+            <div class="form-group"><label class="form-label">Port</label><input type="number" id="portInput" class="form-input" value="1235"></div>
+            <div class="btn-group"><button class="btn btn-primary" onclick="startModel()">Start</button><button class="btn btn-danger" onclick="stopModel()">Stop</button></div>
+        </div>
+        <div class="card">
+         
+            <div class="form-group"><label class="form-label">GPU Layers</label><input type="number" id="nglInput" class="form-input" value="99"></div>
+            <div class="form-group"><label class="form-label">Context</label><input type="number" id="ctxInput" class="form-input" value="32000"></div>
+            <div class="form-group"><label class="form-label">Threads</label><input type="number" id="threadsInput" class="form-input" value="8"></div>
+            <div class="form-group"><label class="form-label">Temperature</label><input type="number" id="tempInput" class="form-input" value="0.05" step="0.01"></div>
+            <div class="form-group"><label class="form-label">Seed</label><input type="number" id="seedInput" class="form-input" value="42"></div>
+            <div class="switch-row"><span class="switch-label">Flash Attention</span><div class="switch active" id="flashAttnSwitch" onclick="toggleSwitch(this)"><div class="switch-knob"></div></div></div>
+            <div class="switch-row"><span class="switch-label">Thinking Chain</span><div class="switch" id="thinkingSwitch" onclick="toggleSwitch(this)"><div class="switch-knob"></div></div></div>
+        </div>
+        <div class="card">
+       
+            <div class="form-group"><label class="form-label">Name</label><input type="text" id="configNameInput" class="form-input" value="default"></div>
+            <div class="btn-group"><button class="btn btn-secondary" onclick="saveConfig()">Save</button><button class="btn btn-secondary" onclick="loadConfig()">Load</button></div>
+        </div>
+        <div class="card" style="margin-bottom:10px;"><button class="btn btn-secondary btn-full" onclick="clearChat()">Clear Chat</button></div>
+    </div>
+    <div class="main-area">
+        <div class="header">
+            <div class="header-title">AI智能助手：Port 1235</div>
+
+   
+        
+        </div>
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistant-message">
+                <div class="message-header">Assistant</div>
+                <div class="message-content">Welcome to <strong style="color:var(--neon-cyan)">LLM-Tools</strong>! <br><br>1. Select model<br>2. Click <strong style="color:var(--neon-green)">Start</strong><br>3. Type &amp; press <strong style="color:var(--neon-cyan)">Enter</strong></div>
+  
+            </div>
+        </div>
+        <div class="input-area">
+            <div class="input-wrapper">
+                <div class="input-box"><textarea id="inputBox" class="input-textarea" placeholder="Type message... (Enter to send)"></textarea></div>
+                <div class="input-actions"><button class="btn btn-primary btn-send" onclick="sendMessage()">Send</button><button class="btn btn-danger btn-stop" onclick="stopInference()">Stop</button></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const BACKEND_API = 'http://127.0.0.1:5003';
+        function setTheme(theme) { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('llm-tools-theme', theme); document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); }
+        const st = localStorage.getItem('llm-tools-theme'); if (st) { document.documentElement.setAttribute('data-theme', st); const tn = {neon:'霓虹','eye-care':'护眼',light:'浅色'}; document.querySelectorAll('.theme-btn').forEach(b => { if (b.textContent === tn[st]) b.classList.add('active'); }); }
+        const fontSizes = ['m', 'l', 'xl', 's'];
+        const fontLabels = {m:'中', l:'大', xl:'特大', s:'小'};
+        function setFont() { const cur = localStorage.getItem('llm-tools-font') || 'm'; const idx = fontSizes.indexOf(cur); const next = fontSizes[(idx + 1) % 4]; localStorage.setItem('llm-tools-font', next); document.documentElement.setAttribute('data-font', next); document.querySelector('.font-btn').textContent = fontLabels[next]; }
+        const sf = localStorage.getItem('llm-tools-font'); if (sf) { document.documentElement.setAttribute('data-font', sf); document.querySelector('.font-btn').textContent = fontLabels[sf]; }
+        function toggleSwitch(el) { el.classList.toggle('active'); }
+        async function refreshModels() { try { const r = await fetch('/models_list.json'); const d = await r.json(); if (d.success) { const s = document.getElementById('modelSelect'); s.innerHTML = '<option value="">-- Select --</option>'; d.models.forEach(m => { const o = document.createElement('option'); o.value = m.name; o.textContent = m.name + ' (' + m.size + ')'; s.appendChild(o); }); } } catch(e) {} }
+        async function checkStatus() { try { const r = await fetch(BACKEND_API + '/api/status'); const d = await r.json(); const i = document.getElementById('statusIndicator'); const t = document.getElementById('modelInfoText'); if (d.running) { i.classList.add('running'); t.textContent = d.model + ' (PID:' + d.pid + ')'; document.getElementById('serverPortText').textContent = 'port ' + d.port; } else { i.classList.remove('running'); t.textContent = 'No model running'; } } catch(e) {} }
+        async function startModel() { const m = document.getElementById('modelSelect').value; if (!m) { alert('Select model'); return; } const p = { model: m, port: +document.getElementById('portInput').value, ngl: +document.getElementById('nglInput').value, ctx: +document.getElementById('ctxInput').value, threads: +document.getElementById('threadsInput').value, temp: +document.getElementById('tempInput').value, seed: +document.getElementById('seedInput').value, flash_attn: document.getElementById('flashAttnSwitch').classList.contains('active') }; try { const r = await fetch(BACKEND_API + '/api/start', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)}); const d = await r.json(); if (d.success) { alert('Started:'+m); checkStatus(); } else { alert('Error:'+d.message); } } catch(e) { alert('Backend not running'); } }
+        async function stopModel() { try { const r = await fetch(BACKEND_API + '/api/stop', {method:'POST'}); const d = await r.json(); alert(d.message); checkStatus(); } catch(e) {} }
+        function addMessage(role, content) { const div = document.createElement('div'); div.className = 'message ' + role + '-message'; div.innerHTML = '<div class="message-header">' + (role==='user'?'You':'Assistant') + '</div><div class="message-content">' + content + '</div>'; document.getElementById('chatContainer').appendChild(div); document.getElementById('chatContainer').scrollTop = 999999; return div; }
+        async function sendMessage() { const input = document.getElementById('inputBox').value; if (!input.trim()) return; addMessage('user', input); document.getElementById('inputBox').value = ''; const ai = addMessage('assistant', ''); try { const r = await fetch(BACKEND_API + '/api/tool_chat_stream', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({input:input,port:1235})}); const reader = r.body.getReader(); const decoder = new TextDecoder(); let full = ''; let toolInfo = ''; while (true) { const {done, value} = await reader.read(); if (done) break; const chunk = decoder.decode(value); const lines = chunk.split('\n'); for (const line of lines) { if (line.startsWith('data:')) { try { const data = JSON.parse(line.substring(6)); if (data.tool_used) { toolInfo = '<div class="tool-info" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;">🔧 工具调用: <strong>' + data.tool + '</strong><br>参数: ' + JSON.stringify(data.arguments) + '</div>'; ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">执行中...</div>'; } if (data.tool_result) { ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">' + data.tool_result + '</div>'; } if (data.content) { full += data.content; ai.querySelector('.message-content').textContent = full; document.getElementById('chatContainer').scrollTop = 999999; } if (data.done && !data.tool_result) { if (!full) ai.querySelector('.message-content').textContent = 'No response'; } } catch(e) {} } } } } catch(e) { ai.querySelector('.message-content').textContent = 'Error: ' + e.message; } }
+        function stopInference() {}
+        function clearChat() { document.getElementById('chatContainer').innerHTML = '<div class="message assistant-message"><div class="message-header">Assistant</div><div class="message-content">欢迎使用 <strong style="color:var(--neon-cyan)">AI智能助手</strong>!<br><br>选择模型, 点击 开始, 发送 消息.</div></div>'; }
+        document.getElementById('inputBox').onkeypress = function(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+        refreshModels(); checkStatus();
+    </script>
+</body>
+</html>
