@@ -277,8 +277,76 @@
         // =====================================================================
         
         function addMessage(role, content) { const div = document.createElement('div'); div.className = 'message ' + role + '-message'; div.innerHTML = '<div class="message-header">' + (role==='user'?'You':'Assistant') + '</div><div class="message-content">' + content + '</div>'; document.getElementById('chatContainer').appendChild(div); document.getElementById('chatContainer').scrollTop = 999999; return div; }
-        async function sendMessage() { const input = document.getElementById('inputBox').value; if (!input.trim()) return; conversationHistory.push({role:'user',content:input}); addMessage('user', input); document.getElementById('inputBox').value = ''; const ai = addMessage('assistant', ''); try { const r = await fetch(BACKEND_API + '/api/tool_chat_stream', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages:conversationHistory,port:1235})}); const reader = r.body.getReader(); const decoder = new TextDecoder(); let full = ''; let toolInfo = ''; let toolResultContent = ''; while (true) { const {done, value} = await reader.read(); if (done) break; const chunk = decoder.decode(value); const lines = chunk.split('\n'); for (const line of lines) { if (line.startsWith('data:')) { try { const data = JSON.parse(line.substring(6)); if (data.tool_used) { toolInfo = '<div class="tool-info" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;">🔧 工具调用: <strong>' + data.tool + '</strong><br>参数: ' + JSON.stringify(data.arguments) + '</div>'; ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">执行中...</div>'; } if (data.tool_result) { toolResultContent = data.tool_result; ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">' + toolResultContent + '</div>'; conversationHistory.push({role:'assistant',content: '[工具调用] ' + data.tool + ': ' + data.tool_result}); } if (data.content) { full += data.content; ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result">' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + full + '</div>'; document.getElementById('chatContainer').scrollTop = 999999; } if (data.done && !data.tool_result) { if (!full) ai.querySelector('.message-content').textContent = 'No response'; else { const renderedFull = marked.parse(full); ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result">' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + renderedFull + '</div>'; conversationHistory.push({role:'assistant',content:full}); } } } catch(e) {} } } } } catch(e) { ai.querySelector('.message-content').textContent = 'Error: ' + e.message; } }
-        function stopInference() {}
+        async function sendMessage() {
+            const input = document.getElementById('inputBox').value;
+            if (!input.trim()) return;
+            conversationHistory.push({role:'user',content:input});
+            addMessage('user', input);
+            document.getElementById('inputBox').value = '';
+            const ai = addMessage('assistant', '');
+            
+            try {
+                const r = await fetch(BACKEND_API + '/api/tool_chat_stream', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages:conversationHistory,port:1235})});
+                const reader = r.body.getReader();
+                const decoder = new TextDecoder();
+                let full = '';
+                let toolInfo = '';
+                let toolResultContent = '';
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                
+                                // ✅ 增强工具结果显示逻辑：添加调试日志
+                                if (data.tool_used) {
+                                    console.log('🔧 工具调用:', data.tool, data.arguments);
+                                    toolInfo = '<div class="tool-info" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;">🔧 工具调用: <strong>' + data.tool + '</strong><br>参数: ' + JSON.stringify(data.arguments) + '</div>';
+                                    ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">执行中...</div>';
+                                }
+                                
+                                // ✅ 增强工具结果显示逻辑：确保工具结果始终显示
+                                if (data.tool_result) {
+                                    console.log('✅ 工具结果收到:', data.tool_result.substring(0, 100) + '...');
+                                    toolResultContent = data.tool_result;
+                                    ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;max-height:200px;overflow-y:auto;">✅ 工具结果: ' + toolResultContent + '</div>';
+                                    conversationHistory.push({role:'assistant',content: '[工具调用] ' + data.tool + ': ' + data.tool_result});
+                                }
+                                
+                                // ✅ 增强工具结果显示逻辑：LLM流式输出时保留工具结果显示
+                                if (data.content) {
+                                    full += data.content;
+                                    ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;max-height:200px;overflow-y:auto;">✅ 工具结果: ' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + full + '</div>';
+                                    document.getElementById('chatContainer').scrollTop = 999999;
+                                }
+                                
+                                // ✅ 增强工具结果显示逻辑：最终渲染时保留工具结果显示
+                                if (data.done && !data.tool_result) {
+                                    if (!full) ai.querySelector('.message-content').textContent = 'No response';
+                                    else {
+                                        const renderedFull = marked.parse(full);
+                                        ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;max-height:200px;overflow-y:auto;">✅ 工具结果: ' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + renderedFull + '</div>';
+                                        conversationHistory.push({role:'assistant',content:full});
+                                    }
+                                }
+                            } catch(e) {
+                                console.error('❌ 解析错误:', e);
+                            }
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error('❌ sendMessage错误:', e);
+                ai.querySelector('.message-content').textContent = 'Error: ' + e.message;
+            }
+        }
+
         function stopInference() {}
         function clearChat() { conversationHistory = []; document.getElementById('chatContainer').innerHTML = '<div class="message assistant-message"><div class="message-header">Assistant</div><div class="message-content">欢迎使用 <strong style="color:var(--neon-cyan">AI智能助手</strong>!<br><br>选择模型, 点击 开始, 发送 消息.</div></div>'; }
         refreshModels(); checkStatus();
