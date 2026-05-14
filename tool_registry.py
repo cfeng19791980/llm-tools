@@ -9,6 +9,27 @@ from typing import Dict, Any, List, Callable, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
+# ✅ v3.0改进：集中配置管理（借鉴openclaw.json）
+# 读取llm-tools-config.json配置文件
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'llm-tools-config.json')
+
+def load_config():
+    """加载配置文件"""
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    else:
+        # 默认配置（兼容旧版本）
+        return {
+            'tools': {
+                'safeDirs': ['E:/llm-tools', 'E:/csi10'],
+                'requiresConfirmation': ['run_command', 'write_file']
+            }
+        }
+
+# 加载配置
+CONFIG = load_config()
+
 # 导入历史记录
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -43,13 +64,8 @@ class ToolRegistry:
             "web": "网络操作",
         }
         
-        # 安全目录配置
-        self.safe_dirs = [
-            "E:/csi10",
-            "E:/brain-system",
-            "E:/llm-tools",
-            "C:/dev",
-        ]
+        # 安全目录配置（从config.json读取）
+        self.safe_dirs = CONFIG['tools']['safeDirs']  # ✅ 集中配置管理
         
         # 注册基础工具
         self._register_builtin_tools()

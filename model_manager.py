@@ -15,16 +15,38 @@ import socket
 import requests
 from pathlib import Path
 from datetime import datetime
-app = Flask(__name__)
-CORS(app)  # 启用CORS，允许所有来源访问
 
-# 配置
-CONFIG_DIR = Path("E:/llm-tools/model_configs")
-# 配置
-CONFIG_DIR = Path("E:/llm-tools/model_configs")
-LLAMA_SERVER_PATH = Path("E:/llama_bin/llama-server.exe")
-PID_FILE = Path("E:/llm-tools/.model_pid.json")
-MODELS_DIR = Path("C:/Users/10341/.lmstudio/models") # LM Studio模型目录
+# ✅ v3.0改进：集中配置管理（借鉴openclaw.json）
+# 读取llm-tools-config.json配置文件
+CONFIG_FILE = Path("E:/llm-tools/llm-tools-config.json")
+
+def load_config():
+    """加载配置文件"""
+    if CONFIG_FILE.exists():
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    else:
+        # 默认配置（兼容旧版本）
+        return {
+            'backend': {'port': 5003, 'host': '127.0.0.1', 'cors': True},
+            'llm': {'port': 1235, 'model': 'Qwen3.5-9B-Q4_K_M.gguf'},
+            'tools': {'safeDirs': ['E:/llm-tools']}
+        }
+
+# 加载配置
+CONFIG = load_config()
+
+app = Flask(__name__)
+
+# CORS配置（从config.json读取）
+if CONFIG['backend']['cors']:
+    CORS(app)  # 启用CORS，允许所有来源访问
+
+# 配置（从config.json读取，不再硬编码）
+CONFIG_DIR = Path(CONFIG['paths']['configDir'])
+LLAMA_SERVER_PATH = Path("E:/llama_bin/llama-server.exe")  # 固定路径
+PID_FILE = Path(CONFIG['paths']['pidFile'])
+MODELS_DIR = Path(CONFIG['paths']['modelsDir'])
 
 # 确保配置目录存在
 CONFIG_DIR.mkdir(exist_ok=True)
@@ -94,7 +116,7 @@ def api_start():
         data = request.json
         
         # 参数
-        model_name = data.get('model', 'Qwen3.5-9B-Q4_K_M.gguf')
+        model_name = data.get('model', CONFIG['llm']['model'])  # ✅ 从config.json读取
         port = data.get('port', 1235)
         ngl = data.get('ngl', 99)
         temp = data.get('temp', 0.05)
@@ -224,7 +246,7 @@ def api_save_config():
         data = request.json
         
         config_name = data.get('name', 'default')
-        model = data.get('model', 'Qwen3.5-9B-Q4_K_M.gguf')
+        model = data.get('model', CONFIG['llm']['model'])  # ✅ 从config.json读取
         port = data.get('port', 1235)
         ngl = data.get('ngl', 99)
         temp = data.get('temp', 0.05)
@@ -631,7 +653,7 @@ def api_stream_chat():
         response = requests.post(
             f'http://127.0.0.1:{port}/v1/chat/completions',
             json={
-                'model': 'Qwen3.5-9B-Q4_K_M.gguf',
+                'model': CONFIG['llm']['model'],  # ✅ 从config.json读取
                 'messages': [
                     {'role': 'user', 'content': user_input}
                 ],
@@ -740,7 +762,7 @@ def api_tool_chat_stream():
             json={
                 'model': 'assistant',
                 'messages': full_messages,  # 携带历史
-                'max_tokens': 500,  # ✅ v2.1修复：增加token上限，允许输出完整工具JSON
+                'max_tokens': CONFIG['llm']['maxTokens']['toolJudge'],  # ✅ 从config.json读取
                 'temperature': 0.05
             },
             timeout=30
@@ -814,11 +836,11 @@ def api_tool_chat_stream():
                 response_stream = requests.post(
                     f'http://127.0.0.1:{port}/v1/chat/completions',
                     json={
-                        'model': 'Qwen3.5-9B-Q4_K_M.gguf',
-                        'messages': tool_result_messages,
-                        'max_tokens': 1000,
-                        'temperature': 0.7,
-                        'stream': True
+                'model': CONFIG['llm']['model'],  # ✅ 从config.json读取
+                'messages': tool_result_messages,
+                'max_tokens': CONFIG['llm']['maxTokens']['finalReply'],  # ✅ 从config.json读取
+                'temperature': CONFIG['llm']['temperature']['finalReply'],  # ✅ 从config.json读取
+                'stream': True
                     },
                     stream=True,
                     timeout=60
@@ -858,10 +880,10 @@ def api_tool_chat_stream():
         response_stream = requests.post(
             f'http://127.0.0.1:{port}/v1/chat/completions',
             json={
-                'model': 'Qwen3.5-9B-Q4_K_M.gguf',
+                'model': CONFIG['llm']['model'],  # ✅ 从config.json读取
                 'messages': full_messages,  # 携带完整历史（修复对话历史问题）
-                'max_tokens': 1000,
-                'temperature': 0.7,
+                'max_tokens': CONFIG['llm']['maxTokens']['finalReply'],  # ✅ 从config.json读取
+                'temperature': CONFIG['llm']['temperature']['finalReply'],  # ✅ 从config.json读取
                 'stream': True
             },
             stream=True,
