@@ -115,17 +115,22 @@ def api_start():
     try:
         data = request.json
         
-        # 参数
-        model_name = data.get('model', CONFIG['llm']['model'])  # ✅ 从config.json读取
-        port = data.get('port', 1235)
-        ngl = data.get('ngl', 99)
-        temp = data.get('temp', 0.05)
-        ctx = data.get('ctx', 32000)
-        threads = data.get('threads', 8)
-        seed = data.get('seed', 42)
-        flash_attn = data.get('flash_attn', True)
+        # ✅ v3.1改进：从config.json读取启动参数（集中配置管理）
+        model_name = data.get('model', CONFIG['llm']['model'])
+        model_subpath = CONFIG['llm']['modelSubpath']  # 模型子路径
+        port = data.get('port', CONFIG['llm']['port'])
         
-        # 检查是否已有模型运行
+        # 从config.json读取launchParams
+        launch_params = CONFIG['llm']['launchParams']
+        threads = data.get('threads', launch_params['threads'])
+        ngl = data.get('ngl', launch_params['ngl'])
+        ctx = data.get('ctx', launch_params['ctx'])
+        temp = data.get('temp', launch_params['temperature']['toolJudge'] if 'temperature' in launch_params else 0.05)
+        seed = data.get('seed', launch_params['seed'])
+        flash_attn = data.get('flash_attn', launch_params['flashAttn'])
+        
+        # ✅ v3.1改进：防止重复启动（检查llama-server进程）
+        # 检查是否已有模型运行（通过PID文件）
         status = get_model_status()
         if status['running']:
             return jsonify({
@@ -133,16 +138,33 @@ def api_start():
                 'message': f"Model already running (PID: {status['pid']}, Port: {status['port']})"
             })
         
-        # 构建启动命令
-        model_path = Path(f"E:/models/{model_name}")
+        # 检查端口是否被占用（防止其他程序启动llama-server）
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        port_result = sock.connect_ex(('127.0.0.1', port))
+        sock.close()
+        
+        if port_result == 0:
+            return jsonify({
+                'success': False,
+                'message': f"Port {port} already in use (llama-server may be running externally)"
+            })
+        
+        # ✅ v3.1改进：修正模型路径（使用paths.modelsDir + modelSubpath）
+        models_dir = Path(CONFIG['paths']['modelsDir'])
+        model_path = models_dir / model_subpath / model_name
+        
         if not model_path.exists():
             return jsonify({
                 'success': False,
                 'message': f"Model not found: {model_path}"
             })
         
+        # ✅ v3.1改进：添加cache量化、noWarmup、context-shift参数
+        llama_server_path = Path(CONFIG['paths']['llamaServerPath'])
+        
         cmd = [
-            str(LLAMA_SERVER_PATH),
+            str(llama_server_path),
             "-m", str(model_path),
             "--host", "127.0.0.1",
             "--port", str(port),
@@ -152,8 +174,21 @@ def api_start():
             "--temp", str(temp),
             "-s", str(seed),
             "--flash-attn", "on" if flash_attn else "off",
-            "--reasoning", "off"
+            "--reasoning", "off" if not launch_params['reasoning'] else "on"
         ]
+        
+        # ✅ 添加cache量化参数（-ctk q8_0 -ctv q8_0）
+        if launch_params['cacheQuantization']:
+            cmd.extend(["-ctk", launch_params['cacheQuantization']])
+            cmd.extend(["-ctv", launch_params['cacheQuantization']])
+        
+        # ✅ 添加--no-warmup（加快启动速度）
+        if launch_params['noWarmup']:
+            cmd.append("--no-warmup")
+        
+        # ✅ 添加--context-shift（支持超长文本）
+        if launch_params['contextShift']:
+            cmd.append("--context-shift")
         
         # 启动进程
         proc = subprocess.Popen(
