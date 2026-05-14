@@ -190,6 +190,30 @@ def api_start():
         if launch_params['contextShift']:
             cmd.append("--context-shift")
         
+        # ✅ v3.2改进：添加TriAttention参数（内存优化 + 推理加速）
+        if 'triattention' in launch_params and launch_params['triattention']['enabled']:
+            triattention_params = launch_params['triattention']
+            
+            # 校准文件（必需）
+            if triattention_params['statsFile']:
+                cmd.extend(["--triattention-stats", triattention_params['statsFile']])
+            
+            # KV tokens保留数量
+            if triattention_params['budget']:
+                cmd.extend(["--triattention-budget", str(triattention_params['budget'])])
+            
+            # 最近token保护窗口
+            if triattention_params['window']:
+                cmd.extend(["--triattention-window", str(triattention_params['window'])])
+            
+            # 触发模式
+            if triattention_params['trigger']:
+                cmd.extend(["--triattention-trigger", triattention_params['trigger']])
+            
+            # 日志修剪事件
+            if triattention_params['log']:
+                cmd.append("--triattention-log")
+        
         # 启动进程
         proc = subprocess.Popen(
             cmd,
