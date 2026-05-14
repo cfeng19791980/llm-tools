@@ -61,6 +61,12 @@ web_fetch(url: string) - 获取网页内容
   Example: {"tool": "web_fetch", "args": {"url": "https://weather.com"}}
   用途: 访问特定网址、获取网页数据
   特点: 使用BeautifulSoup提取文本，自动清理HTML
+
+browser_navigate(search_query: string, click_first: boolean optional) - 多层搜索流程
+  Example: {"tool": "browser_navigate", "args": {"search_query": "特朗普"}}
+  用途: 百度搜索关键词 → 点击第一条结果 → 提取正文
+  特点: 集成拦截器，支持JavaScript动态渲染页面，多层链接提取
+  流程: 打开百度搜索结果 → 识别第一条链接 → 点击跳转 → 提取正文
 ```
 
 ### 【其他工具】

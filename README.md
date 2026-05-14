@@ -1,3 +1,34 @@
+
+# LLM-Tools
+
+> 版本: **v2.0.0 - Agent-Level Multi-Turn Decision**
+> 发布日期: 2026-05-14
+> 升级时间: 18:03:19
+
+---
+
+## 🎯 v2.0新特性
+
+### **Phase 1: Steering决策机制** ✅
+
+- ✅ 工具执行后注入决策指令
+- ✅ 失败时自动修复/重试决策
+- ✅ 成功时后续任务管理
+
+### **Phase 2: 循环机制** 🔄
+
+- 🔄 允许连续工具调用
+- 🔄 Session transcript持久化
+- 🔄 最大迭代次数限制
+
+### **Phase 3: Compaction + Retry** 🧹
+
+- 🧹 长对话自动压缩
+- 🧹 失败自动重试
+- 🧹 Queue多模式管理
+
+---
+
 # LLM-Tools
 
 **AI工具调用平台 - 让本地LLM能够使用工具**

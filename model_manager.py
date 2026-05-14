@@ -5,7 +5,7 @@ LLM-Tools Model Manager Backend
 提供模型启动/停止、推理服务管理、工具调用、配置保存/载入功能
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import subprocess
 import json
@@ -73,6 +73,13 @@ def get_model_status():
 # ============================================================
 # API 端点
 # ============================================================
+
+
+@app.route('/')
+def index():
+    """提供前端页面""" 
+    return send_file('index.html')
+
 
 @app.route('/api/status', methods=['GET'])
 def api_status():
@@ -733,7 +740,7 @@ def api_tool_chat_stream():
             json={
                 'model': 'assistant',
                 'messages': full_messages,  # 携带历史
-                'max_tokens': 100,
+                'max_tokens': 500,  # ✅ v2.1修复：增加token上限，允许输出完整工具JSON
                 'temperature': 0.05
             },
             timeout=30
@@ -760,11 +767,47 @@ def api_tool_chat_stream():
                 # 流式输出工具结果
                 yield f'data: {json.dumps({"tool_result": tool_result})}\n\n'
                 
-                # 关键修复：将工具结果返回给LLM，让LLM基于结果继续对话
-                # 构建新的messages：添加工具结果
+                # ✅ Phase 2完整改进：Steering决策机制
+                # 根据工具执行结果自动决策（不询问用户）
+                
+                steering_base = f"工具执行结果：\n{tool_result}\n\n请根据结果立即决策下一步行动："
+                
+                # 失败决策：自动修复，不询问用户
+                if "❌" in tool_result or "失败" in tool_result or "错误" in tool_result or "Error" in tool_result:
+                    steering_content = steering_base + """
+如果工具执行失败，请立即采取修复行动（不询问用户）：
+1. **识别错误类型** - 根据错误信息识别是超时、权限、参数还是路径错误
+2. **自动切换工具** - 根据错误类型选择替代工具（Timeout→run_command）
+3. **修复参数重试** - 如果参数错误，修正后立即重试
+4. **直接决策执行** - 不询问用户，直接输出工具JSON
+
+错误类型应对策略：
+- TimeoutError/超时 → 切换run_command（绕过Python层）
+- PermissionError/权限 → 切换run_command（系统命令）
+- KeyError/缺少参数 → 补充参数后重试
+- FileNotFoundError/不存在 → 检查路径或创建文件
+
+决策输出格式（立即执行）：
+- 切换工具：{"tool": "<alternative_tool>", "args": {"..."}}
+- 重试修复：{"tool": "<same_tool>", "args": {"<修正后的参数>"}}
+"""
+                else:
+                    # 成功决策：自动后续调用
+                    steering_content = steering_base + """
+如果工具执行成功，请立即执行后续逻辑（不询问用户）：
+1. **判断任务完成度** - 检查当前结果是否足以完成用户任务
+2. **自动后续调用** - 如果需要其他工具，立即调用
+3. **直接回复用户** - 如果任务完成，直接整合结果回复
+
+决策输出格式（立即执行）：
+- 后续工具：{"tool": "<next_tool>", "args": {"..."}}
+- 任务完成：直接文字回复（不输出JSON）
+"""
+                
+                # 构建新的messages：添加工具结果 + Steering决策
                 tool_result_messages = full_messages + [
                     {'role': 'assistant', 'content': llm_output},
-                    {'role': 'user', 'content': f'工具执行结果：\n{tool_result}\n\n请基于这个结果回答用户问题。'}
+                    {'role': 'user', 'content': steering_content}
                 ]
                 
                 # 再次调用LLM（流式），让LLM基于工具结果输出最终回复

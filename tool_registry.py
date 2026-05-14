@@ -14,6 +14,9 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from tool_history import tool_history
 
+# 导入搜索引擎
+from multi_search_engine_17 import multi_search_17_func
+
 # ── 工具定义 ──
 @dataclass
 class ToolDefinition:
@@ -126,8 +129,24 @@ class ToolRegistry:
             tool_history.record_execution(tool_name, args, result, success)
             
             return result
+        except TimeoutError:
+            error_result = f"❌ TimeoutError: 工具执行超时，建议切换到run_command工具绕过Python层"
+            tool_history.record_execution(tool_name, args, error_result, success=False)
+            return error_result
+        except PermissionError:
+            error_result = f"❌ PermissionError: 权限不足，建议切换到run_command工具使用系统命令"
+            tool_history.record_execution(tool_name, args, error_result, success=False)
+            return error_result
+        except FileNotFoundError:
+            error_result = f"❌ FileNotFoundError: 文件不存在，建议检查路径或创建文件"
+            tool_history.record_execution(tool_name, args, error_result, success=False)
+            return error_result
+        except KeyError as e:
+            error_result = f"❌ KeyError: 缺少必需参数 '{str(e)}'，建议补充参数后重试"
+            tool_history.record_execution(tool_name, args, error_result, success=False)
+            return error_result
         except Exception as e:
-            error_result = f"❌ 工具执行失败: {str(e)}"
+            error_result = f"❌ Error: {str(e)}，请分析错误原因并采取相应行动"
             tool_history.record_execution(tool_name, args, error_result, success=False)
             return error_result
     
@@ -298,6 +317,18 @@ class ToolRegistry:
                 "url": {"type": "string", "required": True, "description": "网页URL（如：https://weather.com）"},
             },
             function=self._web_fetch,
+            category="web",
+        ))
+        
+        # 多层搜索工具（集成拦截器）
+        self.register_tool(ToolDefinition(
+            name="browser_navigate",
+            description="多层搜索流程（适用于搜索关键词、点击链接、提取正文）\n支持：百度搜索 → 点击第一条结果 → 提取完整信息",
+            parameters={
+                "search_query": {"type": "string", "required": True, "description": "搜索关键词（如：特朗普）"},
+                "click_first": {"type": "boolean", "required": False, "description": "是否点击第一条结果（默认True）"},
+            },
+            function=self._browser_navigate,
             category="web",
         ))
     
@@ -546,58 +577,10 @@ class ToolRegistry:
             return f"❌ Python执行失败: {str(e)}"
     
     def _web_search(self, query: str) -> str:
-        """网络搜索（使用wttr.in API查询天气）"""
-        try:
-            import requests
-            import json
-            
-            # 对于天气查询，使用wttr.in API
-            if '天气' in query or 'weather' in query.lower():
-                # 提取城市名
-                city = query.replace('天气', '').replace('weather', '').strip()
-                if not city:
-                    city = 'Fuzhou'  # 默认福州
-                
-                url = f"https://wttr.in/{city}?format=j1&lang=zh"
-                response = requests.get(url, timeout=10)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    current = data['current_condition'][0]
-                    
-                    result = f"✅ {city}天气查询成功\n"
-                    result += f"温度: {current['temp_C']}°C\n"
-                    
-                    # 修复lang_zh参数问题：使用更通用的方式获取天气描述
-                    try:
-                        # 尝试获取中文描述
-                        if 'lang_zh' in current and current['lang_zh']:
-                            weather_desc = current['lang_zh'][0]['value']
-                        else:
-                            # 使用英文描述
-                            weather_desc = current['weatherDesc'][0]['value']
-                        
-                        result += f"天气: {weather_desc}\n"
-                    except:
-                        result += f"天气: {current.get('weatherDesc', [{}])[0].get('value', '未知')}\n"
-                    
-                    result += f"风速: {current['windspeedKmph']} km/h\n"
-                    result += f"湿度: {current['humidity']}%\n"
-                    return result
-                else:
-                    return f"❌ 天气API请求失败: HTTP {response.status_code}"
-            
-            else:
-                # 对于其他搜索，提示用户使用浏览器
-                return f"⚠️ 搜索功能暂不支持\n建议: 在浏览器中搜索 '{query}'\n或使用web_fetch工具访问特定网址"
-                
-        except requests.exceptions.Timeout:
-            return "❌ 网络请求超时"
-        except requests.exceptions.ConnectionError:
-            return "❌ 无法连接网络"
-        except Exception as e:
-            return f"❌ 网络搜索失败: {str(e)}"
-    
+        """网络搜索（使用multi_search_engine_17集成17个搜索引擎）"""
+        
+        # 使用multi_search_17（国内引擎优先）
+        return multi_search_17_func(query, engine='auto')
     def _web_fetch(self, url: str) -> str:
         """获取网页内容"""
         try:
@@ -631,6 +614,92 @@ class ToolRegistry:
             return "❌ 无法连接网络"
         except Exception as e:
             return f"❌ 网页获取失败: {str(e)}"
+    
+    def _browser_navigate(self, search_query: str, click_first: bool = True) -> str:
+        """多层搜索流程（集成拦截器）"""
+        
+        try:
+            # 导入拦截器
+            sys.path.insert(0, 'c:\\dev')
+            
+            from browser_interceptor import BrowserInterceptor
+            
+            import time
+            
+            # 启动拦截器（可见模式，便于观察）
+            interceptor = BrowserInterceptor(headless=False)
+            
+            # Step 1: 直接跳转到搜索结果页面
+            search_url = f'https://www.baidu.com/s?wd={search_query}'
+            
+            interceptor.start(search_url)
+            
+            page = interceptor._page
+            
+            # 等待页面加载
+            time.sleep(3)
+            
+            # Step 2: 识别第一条结果
+            selectors_to_try = [
+                '.result.c-container a',
+                '.result a',
+                '#content_left .result a',
+                'a[href*="baike.baidu.com"]',
+                'a[href*="news"]'
+            ]
+            
+            first_result = None
+            first_result_title = None
+            first_result_url = None
+            
+            for selector in selectors_to_try:
+                try:
+                    first_result = page.locator(selector).first
+                    
+                    if first_result.count() > 0:
+                        first_result_title = first_result.inner_text(timeout=2000)
+                        first_result_url = first_result.get_attribute('href')
+                        break
+                
+                except:
+                    continue
+            
+            if not first_result:
+                interceptor.close()
+                return f"❌ 未找到搜索结果: {search_query}"
+            
+            # Step 3: 点击第一条结果（如果click_first=True）
+            if click_first:
+                first_result.click()
+                
+                page.wait_for_load_state('domcontentloaded')
+                
+                time.sleep(2)
+                
+                final_url = page.url
+            
+            else:
+                final_url = first_result_url
+            
+            
+            # Step 4: 提取正文
+            content = page.locator('body').inner_text()
+            
+            # 关闭浏览器
+            interceptor.close()
+            
+            # 返回结果
+            result_str = f"✅ 多层搜索成功\n"
+            result_str += f"搜索词: {search_query}\n"
+            result_str += f"第一条结果: {first_result_title}\n"
+            result_str += f"跳转URL: {final_url}\n"
+            result_str += f"正文长度: {len(content)}字符\n"
+            result_str += f"正文片段: {content[:200]}"
+            
+            return result_str
+        
+        except Exception as e:
+            return f"❌ 多层搜索失败: {str(e)}"
 
 # ── 全局工具注册中心 ──
 tool_registry = ToolRegistry()
