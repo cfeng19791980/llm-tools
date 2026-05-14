@@ -16,6 +16,87 @@ import requests
 from pathlib import Path
 from datetime import datetime
 
+# =====================================================================
+# Agent v2.0 核心架构：决策循环与状态管理
+# =====================================================================
+
+class AgentState:
+    """Agent状态定义"""
+    WAITING_FOR_USER_INPUT = "WAITING_FOR_USER_INPUT"
+    EXECUTING_TOOL = "EXECUTING_TOOL"
+    NEEDS_VERIFICATION = "NEEDS_VERIFICATION"
+    TASK_COMPLETED = "TASK_COMPLETED"
+    ERROR_HANDLING = "ERROR_HANDLING"
+
+class TaskContext:
+    """任务上下文管理"""
+    def __init__(self):
+        self.state = AgentState.WAITING_FOR_USER_INPUT
+        self.current_tool = None
+        self.tool_result = None
+        self.verification_needed = False
+        self.error_count = 0
+        self.max_retries = 3
+        self.plan = None  # 执行计划
+        self.user_intent = None  # 用户意图
+    
+    def update_state(self, new_state):
+        """更新状态"""
+        self.state = new_state
+        # 状态持久化（可选：保存到文件）
+        # self.save_to_session()
+    
+    def set_tool(self, tool_name, args):
+        """设置当前工具"""
+        self.current_tool = tool_name
+        self.update_state(AgentState.EXECUTING_TOOL)
+    
+    def set_result(self, result):
+        """设置工具结果"""
+        self.tool_result = result
+        self.update_state(AgentState.NEEDS_VERIFICATION)
+    
+    def increment_error(self):
+        """增加错误计数"""
+        self.error_count += 1
+        if self.error_count >= self.max_retries:
+            self.update_state(AgentState.ERROR_HANDLING)
+    
+    def reset(self):
+        """重置任务上下文"""
+        self.state = AgentState.WAITING_FOR_USER_INPUT
+        self.current_tool = None
+        self.tool_result = None
+        self.verification_needed = False
+        self.error_count = 0
+        self.plan = None
+
+class ErrorMapper:
+    """错误友好提示映射"""
+    ERROR_MESSAGES = {
+        'ConnectionError': '抱歉，网络连接失败，请稍后重试',
+        'TimeoutError': '抱歉，请求超时，请检查网络或减少查询复杂度',
+        'FileNotFoundError': '抱歉，文件不存在，请检查路径是否正确',
+        'PermissionError': '抱歉，没有权限访问该文件，请检查权限设置',
+        'KeyError': '抱歉，缺少必要参数，请检查输入是否完整',
+        'ValueError': '抱歉，参数值不正确，请检查输入格式',
+        'JSONDecodeError': '抱歉，数据格式错误，请检查数据是否有效'
+    }
+    
+    def get_friendly_error(self, error_type, original_error=None):
+        """获取友好错误提示"""
+        friendly_msg = self.ERROR_MESSAGES.get(error_type)
+        if friendly_msg:
+            if original_error:
+                return f"{friendly_msg}。详细信息：{original_error}"
+            return friendly_msg
+        return f"抱歉，执行失败：{error_type}"
+
+# 全局任务上下文实例
+task_context = TaskContext()
+
+# =====================================================================
+
 # ✅ v3.0改进：集中配置管理（借鉴openclaw.json）
 # 读取llm-tools-config.json配置文件
 CONFIG_FILE = Path("E:/llm-tools/llm-tools-config.json")

@@ -9,6 +9,128 @@ from typing import Dict, Any, List, Callable, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
+# =====================================================================
+# Agent v2.0 核心架构：工具验证、重试机制、安全检查
+# =====================================================================
+
+class ToolValidator:
+    """工具结果验证"""
+    def validate_result(self, tool_name, result, user_intent):
+        """验证工具结果是否满足用户意图"""
+        # 相关性检查
+        if tool_name == 'web_search' or tool_name == 'browser':
+            # 检查搜索结果是否与用户意图相关
+            if user_intent and '访华' in user_intent:
+                if '访日' in str(result) and '访华' not in str(result):
+                    return {
+                        'valid': False,
+                        'reason': '搜索结果与用户意图不匹配（访日 vs 访华）',
+                        'suggestion': '建议重试，使用更精确的关键词'
+                    }
+        
+        # 完整性检查
+        if tool_name == 'read_file' or tool_name == 'code_read':
+            if not result or len(str(result)) < 100:
+                return {
+                    'valid': False,
+                    'reason': '文件内容可能不完整（长度<100字符）',
+                    'suggestion': '建议检查文件是否完整'
+                }
+        
+        # 错误检查
+        if isinstance(result, dict) and 'error' in result:
+            return {
+                'valid': False,
+                'reason': result.get('error', '未知错误'),
+                'suggestion': '建议检查工具参数是否正确'
+            }
+        
+        return {'valid': True}
+
+class RetryHandler:
+    """重试机制"""
+    def __init__(self, max_retries=3):
+        self.max_retries = max_retries
+        self.retry_count = {}  # 每个工具的重试计数
+    
+    def handle_failure(self, tool_name, error, context):
+        """处理工具失败"""
+        # 增加错误计数
+        if tool_name not in self.retry_count:
+            self.retry_count[tool_name] = 0
+        
+        self.retry_count[tool_name] += 1
+        
+        if self.retry_count[tool_name] < self.max_retries:
+            # 重试机制
+            return {
+                'action': 'retry',
+                'message': f"工具失败，正在重试（第{self.retry_count[tool_name]}次）",
+                'suggestion': '建议使用相同参数重试'
+            }
+        else:
+            # 降级策略
+            return {
+                'action': 'fallback',
+                'message': f"工具多次失败（{self.max_retries}次），尝试备选方案",
+                'suggestion': self.get_fallback_tool(tool_name)
+            }
+    
+    def get_fallback_tool(self, tool_name):
+        """获取备选工具"""
+        fallback_map = {
+            'web_search': 'web_fetch',
+            'browser': 'web_fetch',
+            'read_file': 'code_read',
+            'exec_python': 'run_command',
+            'run_command': 'exec_python'
+        }
+        return fallback_map.get(tool_name, '无备选工具')
+    
+    def reset_retry_count(self, tool_name):
+        """重置重试计数"""
+        if tool_name in self.retry_count:
+            self.retry_count[tool_name] = 0
+
+class SecurityChecker:
+    """安全检查（高危操作确认）"""
+    HIGH_RISK_OPERATIONS = [
+        'write_file', 'run_command', 'exec_python', 'file_patch'
+    ]
+    
+    def check_operation_risk(self, tool_name, args):
+        """检查操作风险等级"""
+        if tool_name in self.HIGH_RISK_OPERATIONS:
+            # 生成风险提示
+            risk_message = self.get_risk_message(tool_name, args)
+            return {
+                'risk_level': 'HIGH',
+                'confirmation_required': True,
+                'risk_message': risk_message,
+                'tool_name': tool_name,
+                'args': args
+            }
+        return {'risk_level': 'LOW', 'confirmation_required': False}
+    
+    def get_risk_message(self, tool_name, args):
+        """生成风险提示"""
+        if tool_name == 'write_file':
+            return f"⚠️ 将写入文件 {args.get('path', '未知路径')}，请确认是否继续？"
+        elif tool_name == 'run_command':
+            return f"⚠️ 将执行命令 {args.get('command', '未知命令')}，请确认是否继续？"
+        elif tool_name == 'exec_python':
+            return f"⚠️ 将执行Python代码，请确认是否继续？"
+        elif tool_name == 'file_patch':
+            return f"⚠️ 将修改文件 {args.get('path', '未知路径')}，请确认是否继续？"
+        return f"⚠️ 该操作可能修改文件或执行代码，请确认是否继续？"
+
+# 全局实例
+validator = ToolValidator()
+retry_handler = RetryHandler()
+security_checker = SecurityChecker()
+
+# =====================================================================
+
 # ✅ v3.0改进：集中配置管理（借鉴openclaw.json）
 # 读取llm-tools-config.json配置文件
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'llm-tools-config.json')
