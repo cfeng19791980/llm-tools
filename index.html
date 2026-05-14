@@ -114,28 +114,27 @@
         .input-area { background: var(--bg-card); backdrop-filter: blur(20px); padding: 16px 24px; border-top: 1px solid var(--border-color); }
         .input-wrapper { display: flex; gap: 12px; align-items: flex-end; }
         .input-box { flex: 1; }
-        .input-textarea { width: 100%; min-height: 50px; max-height: 120px; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-primary); font-size: calc(13px * var(--font-scale)); resize: none; outline: none; transition: all 0.3s; line-height: 1.5; }
+        .input-textarea { width: 100%; min-height: 50px; max-height: 120px; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-primary); font-size: calc(13px * var(--font-scale)); resize: none; outline: none; transition: all 0.3s; line-height: 1; }
         .input-textarea:focus { border-color: var(--neon-cyan); box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1), var(--shadow-glow); }
         .input-actions { display: flex; gap: 6px; }
         .btn-send, .btn-stop { min-width: 60px; height: 42px; border-radius: 12px; padding: 0 14px; font-size: 11px; }
-        .model-status-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; margin-bottom: 10px; }
+        .model-status-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; margin-bottom: 5px; }
     .model-status-text { font-size: 12px; color: var(--text-secondary); }
 
     /* Markdown样式美化 */
     /* Markdown样式美化（紧凑版） */
     .llm-response { line-height: 1.3; white-space: pre-wrap; }
-   .llm-response * { line-height: 0.9 !important; }
-    .llm-response h1, .llm-response h2, .llm-response h3 { color: var(--neon-cyan); margin: 6px 0; }
-    .llm-response p { margin: 4px 0; }
-    .llm-response ul, .llm-response ol { margin: 6px 0; padding-left: 16px; }
+    .llm-response h1, .llm-response h2, .llm-response h3 { color: var(--neon-cyan); margin: 3px 0; }
+    .llm-response p { margin: 2px 0; }
+    .llm-response ul, .llm-response ol { margin: 3px 0; padding-left: 16px; }
     .llm-response li { margin: 2px 0; }
-    .llm-response table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    .llm-response table { width: 100%; border-collapse: collapse; margin: 4px 0; }
     .llm-response th { background: rgba(0,212,255,0.2); color: var(--neon-cyan); padding: 6px; }
     .llm-response td { padding: 6px; border-bottom: 1px solid var(--border-color); }
     .llm-response code { background: rgba(0,0,0,0.3); color: var(--neon-green); padding: 2px 4px; border-radius: 3px; }
-    .llm-response pre { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; margin: 6px 0; }
-    .llm-response blockquote { background: rgba(124,58,237,0.1); border-left: 2px solid var(--neon-purple); padding: 6px 10px; margin: 6px 0; }
-    .llm-response blockquote { background: rgba(124,58,237,0.1); border-left: 3px solid var(--neon-purple); padding: 8px 12px; margin: 10px 0; }
+    .llm-response pre { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; margin: 3px 0; }
+    .llm-response blockquote { background: rgba(124,58,237,0.1); border-left: 2px solid var(--neon-purple); padding: 6px 10px; margin: 3px 0; }
+    .llm-response blockquote { background: rgba(124,58,237,0.1); border-left: 3px solid var(--neon-purple); padding: 8px 12px; margin: 5px 0; }
         .model-status-indicator.running { background: var(--neon-green); box-shadow: 0 0 12px var(--neon-green); animation: pulse 1.5s infinite; }
 
     /* Agent v2.0 Phase 2: 高危操作确认弹窗样式 */
@@ -145,8 +144,8 @@
         padding: 20px; border-radius: 12px; border: 1px solid var(--neon-cyan);
         z-index: 9999; min-width: 300px; text-align: center;
     }
-    .confirmation-dialog h3 { color: var(--neon-cyan); margin-bottom: 12px; }
-    .confirmation-dialog p { color: var(--text-primary); margin-bottom: 16px; }
+    .confirmation-dialog h3 { color: var(--neon-cyan); margin-bottom: 6px; }
+    .confirmation-dialog p { color: var(--text-primary); margin-bottom: 8px; }
     .confirmation-dialog .btn-group { display: flex; gap: 12px; justify-content: center; }
     .confirmation-dialog .btn-confirm { background: var(--gradient-primary); }
     .confirmation-dialog .btn-cancel { background: rgba(255,255,255,0.1); }
@@ -154,7 +153,7 @@
     /* Agent v2.0 Phase 2: 进度条样式 */
     .progress-bar {
         width: 100%; height: 4px; background: rgba(0,0,0,0.3); border-radius: 2px;
-        margin-top: 8px; overflow: hidden;
+        margin-top: 4px; overflow: hidden;
     }
     .progress-bar .progress-fill {
         height: 100%; background: var(--gradient-primary);
@@ -244,6 +243,39 @@
         async function checkStatus() { try { const r = await fetch(BACKEND_API + '/api/status'); const d = await r.json(); const i = document.getElementById('statusIndicator'); const t = document.getElementById('modelInfoText'); if (d.running) { i.classList.add('running'); t.textContent = d.model + ' (PID:' + d.pid + ')'; document.getElementById('serverPortText').textContent = 'port ' + d.port; } else { i.classList.remove('running'); t.textContent = 'No model running'; } } catch(e) {} }
         async function startModel() { const m = document.getElementById('modelSelect').value; if (!m) { alert('Select model'); return; } const p = { model: m, port: +document.getElementById('portInput').value, ngl: +document.getElementById('nglInput').value, ctx: +document.getElementById('ctxInput').value, threads: +document.getElementById('threadsInput').value, temp: +document.getElementById('tempInput').value, seed: +document.getElementById('seedInput').value, flash_attn: document.getElementById('flashAttnSwitch').classList.contains('active') }; try { const r = await fetch(BACKEND_API + '/api/start', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)}); const d = await r.json(); if (d.success) { alert('Started:'+m); checkStatus(); } else { alert('Error:'+d.message); } } catch(e) { alert('Backend not running'); } }
         async function stopModel() { try { const r = await fetch(BACKEND_API + '/api/stop', {method:'POST'}); const d = await r.json(); alert(d.message); checkStatus(); } catch(e) {} }
+        
+        // =====================================================================
+        // Agent v2.0 Phase 2: 前端UI辅助函数
+        // =====================================================================
+        
+        // 错误友好提示显示
+        function showErrorToast(errorType, message) {
+            const errorMessages = {
+                'ConnectionError': '抱歉，网络连接失败，请稍后重试',
+                'TimeoutError': '抱歉，请求超时，请检查网络',
+                'FileNotFoundError': '抱歉，文件不存在，请检查路径',
+                'PermissionError': '抱歉，没有权限访问该文件',
+                'KeyError': '抱歉，缺少必要参数，请检查输入'
+            }; 
+            const friendlyMessage = errorMessages[errorType] || message || '抱歉，执行失败';
+            const toast = document.createElement('div');
+            toast.className = 'error-toast';
+            toast.innerHTML = '<strong>错误</strong><br>' + friendlyMessage;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+        
+        // 高危操作确认（简化版）
+        function checkHighRiskOperation(toolName) {
+            const highRiskTools = ['write_file', 'run_command', 'exec_python', 'file_patch'];
+            if (highRiskTools.includes(toolName)) {
+                return confirm('⚠️ 该操作可能修改文件或执行代码，请确认是否继续？');
+            }
+            return true;
+        }
+        
+        // =====================================================================
+        
         function addMessage(role, content) { const div = document.createElement('div'); div.className = 'message ' + role + '-message'; div.innerHTML = '<div class="message-header">' + (role==='user'?'You':'Assistant') + '</div><div class="message-content">' + content + '</div>'; document.getElementById('chatContainer').appendChild(div); document.getElementById('chatContainer').scrollTop = 999999; return div; }
         async function sendMessage() { const input = document.getElementById('inputBox').value; if (!input.trim()) return; conversationHistory.push({role:'user',content:input}); addMessage('user', input); document.getElementById('inputBox').value = ''; const ai = addMessage('assistant', ''); try { const r = await fetch(BACKEND_API + '/api/tool_chat_stream', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages:conversationHistory,port:1235})}); const reader = r.body.getReader(); const decoder = new TextDecoder(); let full = ''; let toolInfo = ''; let toolResultContent = ''; while (true) { const {done, value} = await reader.read(); if (done) break; const chunk = decoder.decode(value); const lines = chunk.split('\n'); for (const line of lines) { if (line.startsWith('data:')) { try { const data = JSON.parse(line.substring(6)); if (data.tool_used) { toolInfo = '<div class="tool-info" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;">🔧 工具调用: <strong>' + data.tool + '</strong><br>参数: ' + JSON.stringify(data.arguments) + '</div>'; ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">执行中...</div>'; } if (data.tool_result) { toolResultContent = data.tool_result; ai.querySelector('.message-content').innerHTML = toolInfo + '<div class="tool-result">' + toolResultContent + '</div>'; conversationHistory.push({role:'assistant',content: '[工具调用] ' + data.tool + ': ' + data.tool_result}); } if (data.content) { full += data.content; ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result">' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + full + '</div>'; document.getElementById('chatContainer').scrollTop = 999999; } if (data.done && !data.tool_result) { if (!full) ai.querySelector('.message-content').textContent = 'No response'; else { const renderedFull = marked.parse(full); ai.querySelector('.message-content').innerHTML = toolInfo + (toolResultContent ? '<div class="tool-result">' + toolResultContent + '</div>' : '') + '<div class="llm-response">' + renderedFull + '</div>'; conversationHistory.push({role:'assistant',content:full}); } } } catch(e) {} } } } } catch(e) { ai.querySelector('.message-content').textContent = 'Error: ' + e.message; } }
         function stopInference() {}
