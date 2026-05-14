@@ -951,28 +951,38 @@ def api_tool_chat_stream():
 
 决策输出格式（立即执行）：
 - 切换工具：{"tool": "<alternative_tool>", "args": {"..."}}
-- 重试修复：{"tool": "<same_tool>", "args": {"<修正后的参数>"}}
-"""
                 else:
                     # 成功决策：自动后续调用
-                    steering_content = steering_base + """
-如果工具执行成功，请立即执行后续逻辑（不询问用户）：
-1. **判断任务完成度** - 检查当前结果是否足以完成用户任务
-2. **自动后续调用** - 如果需要其他工具，立即调用
-3. **直接回复用户** - 如果任务完成，直接整合结果回复
+                    # ✅ 修复：明确告诉LLM用户的原始任务是什么，必须继续执行
+                    
+                    # 提取用户原始任务（从第一条用户消息中提取）
+                    original_user_task = ""
+                    if messages and len(messages) > 0:
+                        for msg in messages:
+                            if msg.get('role') == 'user':
+                                original_user_task = msg.get('content', '')
+                                break
+                    
+                    steering_content = steering_base + f"""
 
-决策输出格式（立即执行）：
-- 后续工具：{"tool": "<next_tool>", "args": {"..."}}
-- 任务完成：直接文字回复（不输出JSON）
+⚠️ **用户的原始任务是**：{original_user_task}
+
+当前工具调用只是第一步，**必须继续执行后续工具调用**（不询问用户）：
+
+1. **检查任务完成度** - 当前工具结果是否已经完全解决了用户的原始任务？
+2. **如果任务未完成** - 必须立即输出第二轮工具调用JSON（不回复文字）
+3. **如果任务已完成** - 才可以回复文字（整合结果）
+
+**强制规则**：
+- ❌ 禁止在任务未完成时直接回复文字
+- ✅ 必须在任务未完成时输出第二轮工具调用JSON
+- ✅ 示例：如果用户任务是"修复bug"，读取文件后必须继续输出"分析bug"和"修复bug"的工具调用JSON
+
+**决策输出格式**（立即执行）：
+- 后续工具调用：{"tool": "<next_tool>", "args": {...}}
+- 任务完成才回复文字：直接文字回复（不输出JSON）
 """
-                
-                # 构建新的messages：添加工具结果 + Steering决策
-                tool_result_messages = full_messages + [
-                    {'role': 'assistant', 'content': llm_output},
-                    {'role': 'user', 'content': steering_content}
-                ]
-                
-                # 再次调用LLM（流式），让LLM基于工具结果输出最终回复
+
                 response_stream = requests.post(
                     f'http://127.0.0.1:{port}/v1/chat/completions',
                     json={
