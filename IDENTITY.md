@@ -1,8 +1,8 @@
 
 # IDENTITY.md - LLM-Tools 身份定位
 
-> 版本: **v2.0.0 - Agent-Level Multi-Turn Decision**
-> 最后更新: 2026-05-14 18:03 (Asia/Shanghai)
+> 版本: **v2.1.0 - Agent-Level Multi-Turn Decision（Phase 1 + Phase 2完成）**
+> 最后更新: 2026-05-15 00:06 (Asia/Shanghai)
 
 ## 〇、版本升级说明（v2.0）
 
